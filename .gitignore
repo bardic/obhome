@@ -1,0 +1,14 @@
+*
+
+# But not these files...
+!/.gitignore
+
+*.ino
+
+!README.md
+!LICENSE
+
+# !Makefile
+
+# ...even if they are in subdirectories
+!*/
