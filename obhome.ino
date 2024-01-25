@@ -7,6 +7,8 @@ int pin = 10;
 
 int goalTemp = 0;
 int defaultTemp = 10;
+long startMillis = 0;
+long period = 10000;
 
 char TEMP[] = "TEMP";
 char historyFile[] = "HIST";
@@ -17,6 +19,7 @@ OBconnect conn;
 
 void setup()
 {
+  startMillis = millis();
   delay(2000);
   Serial.begin(115200);
   store.setupSD();
@@ -28,17 +31,18 @@ void setup()
 void loop()
 {
 
-  // digitalWrite(pin,HIGH);
-
-  // updateWifiState(wifi.getState());
+  long currentMillis = millis();             // get the current "time" (actually the number of milliseconds since the program started)
+  if (currentMillis - startMillis >= period) // test whether the period has elapsed
+  {
+    startMillis = currentMillis;
+    GetLiveTemp();
+  }
 
   char *msg = conn.updateWifiState();
-
   OBrest::Response r = rest.parse(msg);
 
   if (!r.valid)
   {
-    // Serial.println("Not valid");
     return;
   }
 
@@ -46,8 +50,6 @@ void loop()
   {
     Serial.println("Write");
     store.write(r.store, r.val);
-    // Serial.println(r.store);
-    // Serial.println(r.val);
   }
 
   if (strcmp(r.action, "get") == 0)
@@ -57,15 +59,6 @@ void loop()
     Serial.println(r2.store);
     Serial.println(r2.val);
   }
-
-  // currentMillis = millis();  //get the current "time" (actually the number of milliseconds since the program started)
-  // if (currentMillis - startMillis >= period)  //test whether the period has elapsed
-  // {
-  //   GetLiveTemp();
-  //   startMillis = currentMillis;  //IMPORTANT to save the start time of the current LED state.
-  // }
-
-  // GetLiveTemp();
 }
 
 void GetLiveTemp()
