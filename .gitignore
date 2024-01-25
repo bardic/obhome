@@ -4,6 +4,8 @@
 !/.gitignore
 
 !*.ino
+!ob*.h
+!ob*.cpp
 
 !README.md
 !LICENSE

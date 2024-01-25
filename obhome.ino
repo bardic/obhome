@@ -1,176 +1,80 @@
 #include <SoftwareSerial.h>
-#include <SD.h>
-#include "esp8266.h"
-
-// Router
-#define ssid "NETGEAR74"
-#define password "noteandcircuit"
-
-// Server
-#define serverPort 8081
-
-Esp8266 wifi;
-File f;
+#include "obreset.h"
+#include "obstore.h"
+#include "obconnect.h"
 
 int pin = 10;
-int idx = 0;
 
-String action;
-String target;
-String value;
+int goalTemp = 0;
+int defaultTemp = 10;
+
+String TEMP = "TEMP";
+String historyFile = "HIST";
+
+OBrest rest;
+OBstore store;
+OBconnect conn;
 
 void setup()
 {
-  pinMode(pin, OUTPUT);
   delay(2000);
-
   Serial.begin(115200);
-
-  setupSD();
-  setupWifi();
+  store.setupSD();
+  conn.setupWifi();
+  delay(2000);
+  // checkDefaults();
 }
 
 void loop()
 {
-  updateWifiState(wifi.getState());
-}
 
-// setup
-void setupSD()
-{
-  Serial.print("Initializing SD card...");
+  // digitalWrite(pin,HIGH);
 
-  if (!SD.begin(4))
+  // updateWifiState(wifi.getState());
+
+  char *msg = conn.updateWifiState();
+
+  if (msg != NULL)
   {
-    Serial.println("initialization failed!");
-    while (1)
-      ;
-  }
-  Serial.println("initialization done.");
-}
-
-void setupWifi()
-{
-  wifi.begin(&Serial); // Serial is used to communicate with esp8266 module, mySerial is used to debug
-  if (wifi.connectAP(ssid, password))
-  {
-    Serial.println("connect ap sucessful !");
-  }
-  else
-  {
-    while (true)
-      ;
-  }
-
-  if (wifi.setMultiConnect())
-  {
-    Serial.println("set multi connect!");
-  }
-
-  if (wifi.openTCPServer(serverPort, 180))
-  {
-    Serial.println("open TCP Server port " + String(serverPort) + " OK!");
-  }
-
-  Serial.println("Server IP:" + wifi.getIP() + " Port:" + String(serverPort));
-}
-
-void updateWifiState(int state)
-{
-  switch (state)
-  {
-    case WIFI_NEW_MESSAGE:
-      Serial.println(String(wifi.getWorkingID()) + ":" + wifi.getMessage()); // debug
-      wifi.setState(WIFI_IDLE);
-      ParseMsg(wifi.getMessage());
-      break;
-    case WIFI_CLOSED: // just print which connect is close, won't reconnect
-      Serial.println(String(wifi.getFailConnectID()) + ":connect closed!");
-      wifi.setState(WIFI_IDLE);
-      break;
-    case WIFI_IDLE:
-      {
-        int state = wifi.checkMessage();
-        wifi.setState(state);
-        break;
-      }
-    case WIFI_CLIENT_ON: // if a client is connected ,say hello to it
-      wifi.sendMessage(wifi.getWorkingID(), "hello, this is OBhome.\n");
-      wifi.setState(WIFI_IDLE);
-      break;
-  }
-}
-
-void ParseMsg(String msg)
-{
-  idx = msg.indexOf(":");
-  action = msg.substring(0, idx);
-  msg.remove(0, idx+1);
-  idx = msg.indexOf(":");
-  target = msg.substring(0, idx);
-  msg.remove(0, idx+1);
-  idx = msg.indexOf(":");
-  value = msg.substring(0, idx);
-
-  target.trim();
-  value.trim();
-  action.trim();
-
-  Serial.print("Action: ");
-  Serial.print(action);
-  Serial.print("; Target: ");
-  Serial.print(target);
-  Serial.print("; Value: ");
-  Serial.print(value);
-
-  if(action == "post"){
-    Post();
-  }
-
-  if(action == "put"){
-    Put();
-  }
-
-  if(action == "get"){
-    Get();
-  }
-
-  if(action == "delete"){
-    Delete();
-  }
-}
-
-void Post()
-{
-	f = SD.open(target, FILE_WRITE);
-  if (f) {
-    f.println(value);
-    f.close();
-  } else {
-    Serial.println("error opening file");
-  }
-}
-
-void Put()
-{
-	SD.remove(target);
-	Post();
-}
-
-void Delete()
-{
-	SD.remove(target);
-}
-
-void Get()
-{ 
-	f = SD.open(target, FILE_READ);
-  if (f) {
-    while (f.available()) {
-      wifi.sendMessage(wifi.getWorkingID(), f.readString());
+    Serial.println("Prepare parse");
+    Serial.println(msg);
+    OBrest::Response r = rest.parse(msg);
+    if (strcmp(r.action, "post") == 0)
+    {
+      Serial.println("Write");
+      // OBrest::Response r = store.write(response);
+      // Serial.println(r.store);
+      // Serial.println(r.val);
     }
-    f.close();
-  } else {
-    Serial.println("error opening file");
+
+    if (strcmp(r.action, "get") == 0)
+    {
+      Serial.println("Get");
+      // OBrest::Response r2 = store.read(response);
+      // Serial.println(r2.store);
+      // Serial.println(r2.val);
+    }
+
+    free(msg);
   }
+
+  // currentMillis = millis();  //get the current "time" (actually the number of milliseconds since the program started)
+  // if (currentMillis - startMillis >= period)  //test whether the period has elapsed
+  // {
+  //   GetLiveTemp();
+  //   startMillis = currentMillis;  //IMPORTANT to save the start time of the current LED state.
+  // }
+
+  // GetLiveTemp();
+}
+
+void GetLiveTemp()
+{
+  int val;
+  double data;
+  val = analogRead(0);
+  data = (double)val * (5 / 10.24); // convert the voltage to temperture
+
+  Serial.print("Live Temp: ");
+  Serial.println(data);
 }
