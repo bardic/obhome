@@ -12,7 +12,7 @@ public:
     OBstore();
     void setupSD();
     OBrest::Response read(OBrest::Response resp);
-    OBrest::Response write(OBrest::Response resp);
+    void write(char store[], char val[]);
 
 private:
     File myFile;

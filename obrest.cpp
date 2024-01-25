@@ -1,11 +1,7 @@
 #include "obreset.h"
 
 int idx;
-String delim;
-
-String action;
-String target;
-String value;
+char *delim;
 
 OBrest::OBrest()
 {
@@ -15,15 +11,15 @@ OBrest::OBrest()
 
 OBrest::Response OBrest::parse(char *msg)
 {
-    Serial.println("Parse:");
-    Serial.println(msg);
+    this->response.action = "";
+    this->response.store = "";
+    this->response.val = "";
+
     char *d = strtok(msg, "/");
     int idx = 0;
 
     while (d != NULL)
     {
-        Serial.println(d);
-
         if (idx == 0)
         {
             this->response.action = d;
@@ -44,13 +40,11 @@ OBrest::Response OBrest::parse(char *msg)
         d = strtok(NULL, "/");
     }
 
-    Serial.println("Response:");
-    Serial.print("Action: ");
-    Serial.println(response.action);
-    Serial.print("Store: ");
-    Serial.println(response.store);
-    Serial.print("Value: ");
-    Serial.println(response.val);
+    if (this->response.action == "" || this->response.store == "")
+    {
+        return this->response;
+    }
 
+    response.valid = true;
     return this->response;
 }

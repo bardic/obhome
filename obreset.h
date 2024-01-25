@@ -13,12 +13,9 @@ public:
         char *store;
         char *action;
         char *val;
+        bool valid;
     } response;
     OBrest::Response parse(char *msg);
-
-    char *action;
-    char *target;
-    char *value;
 
 private:
     int idx;

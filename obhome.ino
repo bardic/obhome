@@ -8,8 +8,8 @@ int pin = 10;
 int goalTemp = 0;
 int defaultTemp = 10;
 
-String TEMP = "TEMP";
-String historyFile = "HIST";
+char TEMP[] = "TEMP";
+char historyFile[] = "HIST";
 
 OBrest rest;
 OBstore store;
@@ -34,28 +34,28 @@ void loop()
 
   char *msg = conn.updateWifiState();
 
-  if (msg != NULL)
+  OBrest::Response r = rest.parse(msg);
+
+  if (!r.valid)
   {
-    Serial.println("Prepare parse");
-    Serial.println(msg);
-    OBrest::Response r = rest.parse(msg);
-    if (strcmp(r.action, "post") == 0)
-    {
-      Serial.println("Write");
-      // OBrest::Response r = store.write(response);
-      // Serial.println(r.store);
-      // Serial.println(r.val);
-    }
+    // Serial.println("Not valid");
+    return;
+  }
 
-    if (strcmp(r.action, "get") == 0)
-    {
-      Serial.println("Get");
-      // OBrest::Response r2 = store.read(response);
-      // Serial.println(r2.store);
-      // Serial.println(r2.val);
-    }
+  if (strcmp(r.action, "post") == 0)
+  {
+    Serial.println("Write");
+    store.write(r.store, r.val);
+    // Serial.println(r.store);
+    // Serial.println(r.val);
+  }
 
-    free(msg);
+  if (strcmp(r.action, "get") == 0)
+  {
+    Serial.println("Get");
+    OBrest::Response r2 = store.read(r);
+    Serial.println(r2.store);
+    Serial.println(r2.val);
   }
 
   // currentMillis = millis();  //get the current "time" (actually the number of milliseconds since the program started)

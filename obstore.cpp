@@ -61,24 +61,19 @@ OBrest::Response OBstore::read(OBrest::Response resp)
     return res;
 }
 
-OBrest::Response OBstore::write(OBrest::Response resp)
+void OBstore::write(char store[], char val[])
 {
-    OBrest::Response res;
-
-    File txtFile = SD.open(resp.store, FILE_WRITE);
+    Serial.println(store);
+    Serial.println(val);
+    File txtFile = SD.open(store, FILE_WRITE);
     if (!txtFile)
     {
         Serial.print("error opening ");
-        Serial.println(resp.store);
+        Serial.println(store);
         while (1)
             ;
     }
 
-    txtFile.println(resp.val);
-
-    res.store = resp.store;
-    res.val = resp.val;
+    txtFile.println(val);
     txtFile.close();
-
-    return res;
 }

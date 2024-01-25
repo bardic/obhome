@@ -8,7 +8,7 @@
 // Server
 #define serverPort 8081
 Esp8266 wifi;
-char *resMsg = NULL;
+char char_array[16];
 
 OBconnect::OBconnect()
 {
@@ -43,6 +43,7 @@ void OBconnect::setupWifi()
 char *OBconnect::updateWifiState()
 {
     int state = wifi.getState();
+    char_array[0] = '\0';
 
     switch (state)
     {
@@ -50,12 +51,10 @@ char *OBconnect::updateWifiState()
     {
         String msg = wifi.getMessage();
         int str_len = msg.length() + 1;
-        char char_array[str_len];
         msg.trim();
         msg.toCharArray(char_array, str_len);
-        char * resMsg = char_array;
         Serial.println("wifi messsage");
-        Serial.println(resMsg);
+        Serial.println(char_array);
         wifi.setState(WIFI_IDLE);
         break;
     }
@@ -70,5 +69,5 @@ char *OBconnect::updateWifiState()
         break;
     }
 
-    return resMsg;
+    return char_array;
 }
