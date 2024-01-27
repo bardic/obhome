@@ -2,6 +2,7 @@
 #include "obreset.h"
 #include "obstore.h"
 #include "obconnect.h"
+#include <Wire.h>
 
 int pin = 10;
 
@@ -21,6 +22,7 @@ void setup()
 {
   startMillis = millis();
   delay(2000);
+  
   Serial.begin(115200);
   store.setupSD();
   conn.setupWifi();
