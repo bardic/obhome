@@ -1,73 +1,77 @@
-#include "esp8266.h"
 #include "obconnect.h"
 
 // Router
 #define ssid "NETGEAR74"
 #define password "noteandcircuit"
 
-// Server
-#define serverPort 8081
-Esp8266 wifi;
-char char_array[16];
+WiFiServer server(8888);
+WiFiClient serverClients[1];
+
+String readString;
 
 OBconnect::OBconnect()
 {
 }
 
-void OBconnect::setupWifi()
+IPAddress OBconnect::setupWifi()
 {
-    wifi.begin(&Serial); // Serial is used to communicate with esp8266 module, mySerial is used to debug
-    if (wifi.connectAP(ssid, password))
-    {
-        Serial.println("connect ap sucessful !");
-    }
-    else
-    {
-        while (true)
-            ;
-    }
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
 
-    if (wifi.setMultiConnect())
-    {
-        Serial.println("set multi connect!");
-    }
+  // while wifi not connected yet, print '.'
+  // then after it connected, get out of the loop
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    delay(500);
+    Serial.print(".");
+  }
+  // print a new line, then print WiFi connected and the IP address
+  Serial.println("");
+  Serial.println("WiFi connected");
+  // Print the IP address
+  Serial.println(WiFi.localIP());
 
-    if (wifi.openTCPServer(serverPort, 180))
-    {
-        Serial.println("open TCP Server port " + String(serverPort) + " OK!");
-    }
+  server.begin();
+  server.setNoDelay(true);
 
-    Serial.println("Server IP:" + wifi.getIP() + " Port:" + String(serverPort));
+  Serial.println("server started");
+
+  return WiFi.localIP();
 }
 
-char *OBconnect::updateWifiState()
+void OBconnect::updateWifiState(void (*draw)(char msg[]))
 {
-    int state = wifi.getState();
-    char_array[0] = '\0';
+  WiFiClient client = server.available();
 
-    switch (state)
+  if (client)
+  {
+    if (client.connected())
     {
-    case WIFI_NEW_MESSAGE:
-    {
-        String msg = wifi.getMessage();
-        int str_len = msg.length() + 1;
-        msg.trim();
-        msg.toCharArray(char_array, str_len);
-        Serial.println("wifi messsage");
-        Serial.println(char_array);
-        wifi.setState(WIFI_IDLE);
-        break;
-    }
-    case WIFI_CLOSED:
-        wifi.setState(WIFI_IDLE);
-        break;
-    case WIFI_IDLE:
-        wifi.setState(wifi.checkMessage());
-        break;
-    case WIFI_CLIENT_ON:
-        wifi.setState(WIFI_IDLE);
-        break;
+      Serial.println("Client Connected");
     }
 
-    return char_array;
+    char msg[64];
+    while (client.connected())
+    {
+      msg[0] = '\0';
+      int idx = 0;
+      while (client.available())
+      {
+        // read data from the connected client
+        char c = client.read();
+        if (c != '\n' && c != '\r')
+        {
+          msg[idx] = c;
+          idx++;
+          msg[idx] = '\0';
+        }
+      }
+      if (msg[0] != '\0')
+      {
+        draw(msg);
+      }
+    }
+    client.stop();
+    Serial.println("Client disconnected");
+  }
 }

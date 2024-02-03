@@ -15,11 +15,11 @@ public:
         char *val;
         bool valid;
     } response;
-    OBrest::Response parse(char *msg);
+    Response parse(char *msg);
 
 private:
     int idx;
-    char *delim;
+    const char *delim;
 };
 
 #endif

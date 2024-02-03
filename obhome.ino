@@ -1,75 +1,96 @@
-#include <SoftwareSerial.h>
-#include "obreset.h"
-#include "obstore.h"
+#include <Arduino.h>
+#include <U8g2lib.h>
+#include "ESP8266WiFi.h"
 #include "obconnect.h"
+#include "obrest.h"
+#include <algorithm>
+
+#ifdef U8X8_HAVE_HW_SPI
+#include <SPI.h>
+#endif
+#ifdef U8X8_HAVE_HW_I2C
 #include <Wire.h>
+#endif
 
-int pin = 10;
+U8G2_SSD1306_128X64_NONAME_F_SW_I2C u8g2(U8G2_R0, /* clock=*/14, /* data=*/12, /* reset=*/U8X8_PIN_NONE);
 
-int goalTemp = 0;
-int defaultTemp = 10;
-long startMillis = 0;
-long period = 10000;
+IPAddress ip;
 
-char TEMP[] = "TEMP";
-char historyFile[] = "HIST";
+char ipAddress[64];
 
-OBrest rest;
-OBstore store;
-OBconnect conn;
-
-void setup()
+void setup(void)
 {
-  startMillis = millis();
-  delay(2000);
-  
   Serial.begin(115200);
-  store.setupSD();
-  conn.setupWifi();
-  delay(2000);
-  // checkDefaults();
+  u8g2.begin();
+  ip = OBconnect().setupWifi();
+  WiFi.localIP().toString().toCharArray(ipAddress, 64);
+
+  // OBstore().setupSD();
+  OBrest::Response r = {};
+  r.valid = false;
+  draw(r);
 }
 
-void loop()
+void loop(void)
 {
+  OBconnect().updateWifiState(addMsg);
+}
 
-  long currentMillis = millis();             // get the current "time" (actually the number of milliseconds since the program started)
-  if (currentMillis - startMillis >= period) // test whether the period has elapsed
-  {
-    startMillis = currentMillis;
-    GetLiveTemp();
-  }
+void addMsg(char *msg)
+{
+  OBrest::Response r = OBrest().parse(msg);
 
-  char *msg = conn.updateWifiState();
-  OBrest::Response r = rest.parse(msg);
-
-  if (!r.valid)
-  {
-    return;
-  }
+  Serial.print("Action: ");
+  Serial.println(r.action);
 
   if (strcmp(r.action, "post") == 0)
   {
-    Serial.println("Write");
-    store.write(r.store, r.val);
+    Serial.println("Handle Post");
+  }
+
+  if (strcmp(r.action, "put") == 0)
+  {
+    Serial.println("Handle Put");
   }
 
   if (strcmp(r.action, "get") == 0)
   {
-    Serial.println("Get");
-    OBrest::Response r2 = store.read(r);
-    Serial.println(r2.store);
-    Serial.println(r2.val);
+    Serial.println("Handle Get");
   }
+
+  if (strcmp(r.action, "delete") == 0)
+  {
+    Serial.println("Handle Delete");
+  }
+
+  draw(r);
 }
 
-void GetLiveTemp()
+void draw(OBrest::Response r)
 {
-  int val;
-  double data;
-  val = analogRead(0);
-  data = (double)val * (5 / 10.24); // convert the voltage to temperture
 
-  Serial.print("Live Temp: ");
-  Serial.println(data);
+  u8g2.clearBuffer();
+  u8g2.setFont(u8g2_font_7x14B_tr);
+
+  u8g2.setCursor(0, 30);
+  u8g2.print("IP: ");
+  u8g2.setCursor(25, 30);
+  u8g2.print(ip);
+
+  u8g2.setCursor(0, 60);
+  u8g2.print("Msg: ");
+  if (!r.valid)
+  {
+    u8g2.sendBuffer();
+    return;
+  }
+
+  u8g2.setCursor(30, 60);
+  u8g2.print(r.action);
+  u8g2.print("/");
+  u8g2.print(r.store);
+  u8g2.print("/");
+  u8g2.print(r.val);
+
+  u8g2.sendBuffer();
 }

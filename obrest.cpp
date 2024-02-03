@@ -1,50 +1,48 @@
-#include "obreset.h"
+#include "obrest.h"
 
 int idx;
-char *delim;
+const char *delim = "/";
 
 OBrest::OBrest()
 {
-    this->delim = "/";
-    this->idx = 0;
 }
 
 OBrest::Response OBrest::parse(char *msg)
 {
-    this->response.action = "";
-    this->response.store = "";
-    this->response.val = "";
+    OBrest::Response r = {};
 
     char *d = strtok(msg, "/");
     int idx = 0;
 
     while (d != NULL)
     {
+
         if (idx == 0)
         {
-            this->response.action = d;
+            r.action = d;
         }
 
         if (idx == 1)
         {
-            this->response.store = d;
+            r.store = d;
         }
 
         if (idx == 2)
         {
-            this->response.val = d;
+            r.val = d;
         }
 
+        Serial.println(d);
         idx++;
 
         d = strtok(NULL, "/");
     }
 
-    if (this->response.action == "" || this->response.store == "")
+    if (r.action == "" || r.store == "")
     {
-        return this->response;
+        return r;
     }
 
-    response.valid = true;
-    return this->response;
+    r.valid = true;
+    return r;
 }
