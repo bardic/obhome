@@ -18,9 +18,17 @@ IPAddress ip;
 
 char ipAddress[64];
 
+unsigned long tepTimer;
+
+#define TPIN 0
+
+uint32_t delayMS;
+
 void setup(void)
 {
   Serial.begin(115200);
+  delay(2500);
+
   u8g2.begin();
   ip = OBconnect().setupWifi();
   WiFi.localIP().toString().toCharArray(ipAddress, 64);
@@ -34,6 +42,36 @@ void setup(void)
 void loop(void)
 {
   OBconnect().updateWifiState(addMsg);
+
+  delay(2500);
+  int val;                          // save the value of LM35
+  double data;                      // save the converted value of temperature
+  val = analogRead(TPIN);           // Connect LM35 to analog pin and read
+  data = ((double)val * 5) / 10.24; // Convert the voltage value to
+
+  if (data > 27)
+  { // If temperature is higher than 27, the buzzer starts to
+
+    Serial.println("Too hot");
+  }
+  else
+  { // If the temperature is lower than
+
+    Serial.println("Too hot");
+  }
+  if (millis() - tepTimer > 50)
+  { // Every 500 ms, serial port outputs
+
+    tepTimer = millis();
+    Serial.print("temperature: "); // Serial port outputs temperature
+    Serial.print(data);            // Serial port outputs temperature
+
+    Serial.println("C"); // Serial port output temperature
+  }
+}
+
+void addTempSenor()
+{
 }
 
 void addMsg(char *msg)

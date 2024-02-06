@@ -59,7 +59,7 @@ void OBconnect::updateWifiState(void (*draw)(char msg[]))
       {
         // read data from the connected client
         char c = client.read();
-        if (c != '\n' && c != '\r')
+        if (c != '\n' && c != '\r') 
         {
           msg[idx] = c;
           idx++;
